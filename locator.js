@@ -10,14 +10,33 @@
  * Limitations:
  * - When the device does not have GPS, the position can be inaccurate.
  * - Needs permission
- * -
- */
+ * - Cant get the ip in local javascript, if the ip would be available the approximate
+ * position(very inaccurate because it's the providers position) could be found out. This would work with a link
+ * like this:http://www.geoplugin.net/json.gp?ip=62.30.218.130.
+ *
+ * With this code:
+var settings = {
+  "async": true,
+  "crossDomain": true,
+  "url": "http://www.geoplugin.net/json.gp?ip=62.30.218.130",
+  "method": "GET",
+  "headers": {
+    "cache-control": "no-cache",
+    "Postman-Token": "f4365f1a-1b64-4258-a199-59b693e83a85"
+  }
+}
 
+$.ajax(settings).done(function (response) {
+  console.log(response);
+});
+
+ *This will return a json file with the geodata
+ */
 
 let lat, long, accuracy;
 
 //the callback method is called asynchronously
-navigator.geolocation.getCurrentPosition(showPosition);
+navigator.geolocation.getCurrentPosition(showPosition, showError);
 
 /**
  * Needs permission to work.
@@ -27,14 +46,39 @@ navigator.geolocation.getCurrentPosition(showPosition);
 function showPosition(position) {
 
     long = position.coords.longitude;
-    lat = +position.coords.latitude;
+    lat = position.coords.latitude;
     accuracy = position.coords.accuracy;
-
     drawMap();
 
-    document.getElementById("long").innerText = "" + long;
-    document.getElementById("lat").innerText = "" + lat;
-    document.getElementById("accuracy").innerText = "" + accuracy;
+
+}
+
+/**
+ * If the Geolocation is unavailable or blocked there is no possibility to get the ip via javascript. There are
+ * websites that give back the ip, but all of them seem to be blocked when they get called by javascript.
+ * @param error
+ */
+
+function showError(error) {
+    let x = document.getElementById("mapId");
+    switch (error.code) {
+        case error.PERMISSION_DENIED:
+            alert("User denied the request for Geolocation.");
+            break;
+        case error.POSITION_UNAVAILABLE:
+            alert("Location information is unavailable.");
+            break;
+        case error.TIMEOUT:
+            alert("The request to get user location timed out.");
+            break;
+        default:
+            alert("An unknown error occurred.");
+            break;
+    }
+    lat = 0;
+    long = 0;
+    accuracy = 0;
+    drawMap();
 }
 
 /**
@@ -69,6 +113,9 @@ function drawMap() {
     marker.bindPopup("<p>Hi i'm your estimated Position.</p>").openPopup();
     circle.bindPopup("I'm the radius of accuracy");
 
+    document.getElementById("long").innerText = "" + long;
+    document.getElementById("lat").innerText = "" + lat;
+    document.getElementById("accuracy").innerText = "" + accuracy;
 }
 
 
