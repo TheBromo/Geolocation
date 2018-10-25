@@ -10,27 +10,8 @@
  * Limitations:
  * - When the device does not have GPS, the position can be inaccurate.
  * - Needs permission
- * - Cant get the ip in local javascript, if the ip would be available the approximate
- * position(very inaccurate because it's the providers position) could be found out. This would work with a link
- * like this:http://www.geoplugin.net/json.gp?ip=62.30.218.130.
+ * - Cant get the ip in local javascript. This is possible with a api, but some adBlockers block such requests.
  *
- * With this code:
-var settings = {
-  "async": true,
-  "crossDomain": true,
-  "url": "http://www.geoplugin.net/json.gp?ip=62.30.218.130",
-  "method": "GET",
-  "headers": {
-    "cache-control": "no-cache",
-    "Postman-Token": "f4365f1a-1b64-4258-a199-59b693e83a85"
-  }
-}
-
-$.ajax(settings).done(function (response) {
-  console.log(response);
-});
-
- *This will return a json file with the geodata
  */
 
 let lat, long, accuracy;
@@ -44,13 +25,36 @@ navigator.geolocation.getCurrentPosition(showPosition, showError);
  * @param position
  */
 function showPosition(position) {
-
     long = position.coords.longitude;
     lat = position.coords.latitude;
     accuracy = position.coords.accuracy;
     drawMap();
+}
 
-
+/**
+ * this is very inaccurate since it's the location of the provider,
+ * only works when adBlock is disabled
+ */
+function getApproximateLocation() {
+    $.getJSON('http://www.geoplugin.net/json.gp?jsoncallback=?', function (data) {
+        lat = data.geoplugin_latitude;
+        long = data.geoplugin_longitude;
+        accuracy = 155000;
+        if (lat === undefined || long === undefined) {
+            long = 0;
+            lat = 0;
+            accuracy = 0;
+        }
+        drawMap();
+    }).fail(function () {
+        console.log("IP Location request blocked");
+        if (lat === undefined || long === undefined) {
+            long = 0;
+            lat = 0;
+            accuracy = 0;
+        }
+        drawMap();
+    });
 }
 
 /**
@@ -60,7 +64,6 @@ function showPosition(position) {
  */
 
 function showError(error) {
-    let x = document.getElementById("mapId");
     switch (error.code) {
         case error.PERMISSION_DENIED:
             alert("User denied the request for Geolocation.");
@@ -75,10 +78,7 @@ function showError(error) {
             alert("An unknown error occurred.");
             break;
     }
-    lat = 0;
-    long = 0;
-    accuracy = 0;
-    drawMap();
+    getApproximateLocation();
 }
 
 /**
